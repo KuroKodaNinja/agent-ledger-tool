@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { LedgerError } from "./errors.ts";
 import { isObject, type JsonObject } from "./json.ts";
-import { parseSchemaName } from "./layout.ts";
+import { parseSchemaName, SCHEMA_FOLDER } from "./layout.ts";
 
 // The value types a schema's `type` may name: how a value is recognized, and
 // how a problem names the type. Loading and checking both read this table,
@@ -99,6 +99,15 @@ function refuseUnsupported(node: unknown, where: string): void {
   if (node.if !== undefined) refuseUnsupported(node.if, `${where}/if`);
   if (node.then !== undefined) refuseUnsupported(node.then, `${where}/then`);
   if (isObject(node.additionalProperties)) refuseUnsupported(node.additionalProperties, `${where}/additionalProperties`);
+}
+
+/**
+ * The schemas of the ledger at `root`, loaded from its {@link SCHEMA_FOLDER}: what every record in it is checked against.
+ * @throws {LedgerError} when the directory cannot be read, or a schema is not JSON, or uses a keyword the validator
+ * does not implement or a value of the wrong shape.
+ */
+export function ledgerSchemas(root: string): SchemaSet {
+  return loadSchemas(join(root, SCHEMA_FOLDER));
 }
 
 /**

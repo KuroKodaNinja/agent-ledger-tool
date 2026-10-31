@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A plan's frontmatter: work intended, and how far it has got",
+  "type": "object",
+  "required": ["schema", "title", "date", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "plan@1" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "status": { "enum": ["draft", "active", "done", "dropped"], "default": "draft" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A budget ask beyond the ceiling, which suspends the program until the operator's budget decision: the goal, the amount asked, the reason as given, and the spend so far",
+  "type": "object",
+  "required": ["schema", "date", "goal", "amount", "reason", "spent"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "budget-request@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "goal": { "description": "The goal the budget would go to, by its contract's path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "amount": { "description": "What is asked, in the limits' budget unit.", "type": "integer", "minimum": 1 },
+    "reason": { "description": "The supervisor's reason, quoted as given and never interpreted.", "type": "string", "minLength": 1 },
+    "spent": { "description": "The program's spend so far, in the limits' budget unit.", "type": "integer", "minimum": 0 },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

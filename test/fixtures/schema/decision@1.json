@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A decision's frontmatter: what was decided, and what it replaces or what replaced it",
+  "type": "object",
+  "required": ["schema", "title", "date", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "decision@1" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "status": { "enum": ["proposed", "accepted", "superseded"], "default": "proposed" },
+    "supersedes": { "description": "The decisions this one replaces.", "$ref": "defs@1.json#/$defs/decisions" },
+    "supersededBy": { "description": "The decisions that replace this one.", "$ref": "defs@1.json#/$defs/decisions" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

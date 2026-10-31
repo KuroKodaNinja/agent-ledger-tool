@@ -57,7 +57,7 @@ test("arguments the schemas refuse, and missing ones, are usage errors that writ
     expect(run.code).toBe(2);
     expect(run.stderr.split("\n")[0]).toBe(message);
   }
-  expect(readdirSync(root)).toStrictEqual(["ledger.json"]);
+  expect(readdirSync(root).sort()).toStrictEqual(["ledger.json", "schema"]);
 });
 
 // Every file under `dir`, by path, with its contents.

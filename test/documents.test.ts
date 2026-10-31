@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { emptyLedger, ledger, ledgerWithOwners, problems, toolWithShippedSchemas, writeDocument } from "./support.ts";
+import { emptyLedger, ledger, ledgerWithChangedSchemas, ledgerWithOwners, problems, writeDocument } from "./support.ts";
 
 const decision = (status: string, more: Readonly<Record<string, unknown>> = {}) => ({ schema: "decision@1", title: "D", date: "2026-10-01", status, ...more });
 const plan = (more: Readonly<Record<string, unknown>> = {}) => ({ schema: "plan@1", title: "P", date: "2026-10-01", status: "draft", ...more });
@@ -174,15 +174,15 @@ test("new writes the newest version of a kind, starting from its schema's defaul
       status: { enum: ["parked", "active", "done"], default: "parked" },
     },
   };
-  const tool = toolWithShippedSchemas({ "plan@1.json": null, "plan@2.json": plan2 });
-  const root = emptyLedger();
-  ledger(["new", "project", "alpha", "--title", "Alpha", "--summary", "s"], root, tool);
-  expect(ledger(["new", "plan", "build", "--in", "projects/alpha", "--title", "Build", "--date", "2026-10-01"], root, tool).code).toBe(0);
+  const root = ledgerWithChangedSchemas({ "plan@1.json": null, "plan@2.json": plan2 });
+  ledger(["new", "project", "alpha", "--title", "Alpha", "--summary", "s"], root);
+  expect(ledger(["new", "plan", "build", "--in", "projects/alpha", "--title", "Build", "--date", "2026-10-01"], root).code).toBe(0);
   expect(readFileSync(join(root, "projects/alpha/plans/build.md"), "utf8")).toBe(
     '---\nschema: "plan@2"\ntitle: "Build"\ndate: "2026-10-01"\nstatus: "parked"\n---\n\n# Build\n',
   );
-  expect(ledger(["validate"], root, tool)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
-  expect(ledger(["new", "plan", "x", "--in", "projects/alpha", "--title", "X"], root, toolWithShippedSchemas({ "plan@1.json": null }))).toMatchObject({
+  expect(ledger(["validate"], root)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
+  rmSync(join(root, "schema", "plan@2.json"));
+  expect(ledger(["new", "plan", "x", "--in", "projects/alpha", "--title", "X"], root)).toMatchObject({
     code: 1,
     stderr: "error: the ledger accepts no plan records\n",
   });

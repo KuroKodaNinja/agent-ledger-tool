@@ -5,8 +5,8 @@ import { LedgerError } from "./errors.ts";
 /** The ledger's manifest, at its root. */
 export const LEDGER_MANIFEST = "ledger.json";
 
-/** The schemas this tool validates against, kept with the tool. */
-export const SCHEMA_DIR = join(import.meta.dir, "..", "..", "schema");
+/** The directory of a ledger holding its schemas, one per record kind and major version. */
+export const SCHEMA_FOLDER = "schema";
 
 /** A record's `schema` field taken apart: its kind and major version, or a refusal when it is not `<kind>@<major>`. */
 export type SchemaName =

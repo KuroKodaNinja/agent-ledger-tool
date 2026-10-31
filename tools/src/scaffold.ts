@@ -3,8 +3,8 @@ import { basename, dirname, join } from "node:path";
 import { LedgerError, UsageError } from "./errors.ts";
 import type { JsonObject } from "./json.ts";
 import { CONTRACT_FILE, DECISION_FILE, DocKind, FOLDERS, manifestFile, NAME_RULE, OWNER_DIRS, OwnerKind } from "./layout.ts";
-import { KERNEL_RECORD_KINDS, parseSchemaName, PATH_RULE, RUN_FILE, RunKind, SCHEMA_DIR } from "./layout.ts";
-import { loadSchemas, type SchemaSet } from "./schema.ts";
+import { KERNEL_RECORD_KINDS, parseSchemaName, PATH_RULE, RUN_FILE, RunKind } from "./layout.ts";
+import { ledgerSchemas, type SchemaSet } from "./schema.ts";
 import { checkRunRecord, decisionNumber, type Inspection, inspectLedger, type Problem } from "./validate.ts";
 
 /** What a new project needs. */
@@ -276,7 +276,7 @@ function takeBack(undo: () => void, path: string): void {
 
 /**
  * Writes one of a kernel's records inside a run, which is how a kernel records what a program's run produces, and
- * returns its path in the ledger. It validates with the schemas shipped beside the tool, exactly as `validate` does.
+ * returns its path in the ledger. It validates with the schemas of the ledger at `root`, exactly as `validate` does.
  * It writes only the kinds a kernel writes, never the operator's; it writes nothing else; and it takes the write
  * back when the ledger would not be valid with it, or cannot be inspected with it, so a write that returns leaves a
  * valid ledger.
@@ -285,7 +285,7 @@ function takeBack(undo: () => void, path: string): void {
  * or the record cannot be written.
  */
 export function writeKernelRecord(root: string, input: NewKernelRecord): string {
-  const schemas = loadSchemas(SCHEMA_DIR);
+  const schemas = ledgerSchemas(root);
   const named = parseSchemaName(input.record.schema);
   if (named.ok && !KERNEL_RECORD_KINDS.includes(named.kind)) {
     throw new LedgerError(`${input.path}: schema: is a ${named.kind} record, which a kernel does not write; a kernel writes ${KERNEL_RECORD_KINDS.join(", ")}`);

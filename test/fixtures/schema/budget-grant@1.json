@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A budget ask within the ceiling, granted by the kernel: the goal, the amount, the reason as given, and the ceiling remaining",
+  "type": "object",
+  "required": ["schema", "date", "goal", "amount", "reason", "remaining"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "budget-grant@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "goal": { "description": "The goal the budget goes to, by its contract's path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "amount": { "description": "What was granted, in the limits' budget unit.", "type": "integer", "minimum": 1 },
+    "reason": { "description": "The supervisor's reason, quoted as given and never interpreted.", "type": "string", "minLength": 1 },
+    "remaining": { "description": "The program's ceiling left after the grant, in the limits' budget unit.", "type": "integer", "minimum": 0 },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

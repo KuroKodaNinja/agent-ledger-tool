@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The ledger's manifest, ledger.json",
+  "type": "object",
+  "required": ["schema", "name", "title"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "ledger@1" },
+    "name": { "$ref": "defs@1.json#/$defs/name" },
+    "title": { "$ref": "defs@1.json#/$defs/title" }
+  }
+}

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ledger, ledgerWithOwners, problems, toolWithShippedSchemas, writeDocument, writeJson } from "./support.ts";
+import { ledger, ledgerWithOwners, problems, writeDocument, writeJson } from "./support.ts";
 
 const RUN = "projects/alpha/runs/first";
 const DATE = "2026-10-29";
@@ -119,12 +119,12 @@ test("a hyphenated kind name is accepted, and a run record of such a kind valida
     additionalProperties: false,
     properties: { schema: { const: "budget-decision@2" }, note: { type: "string", minLength: 1 } },
   };
-  const tool = toolWithShippedSchemas({ "budget-decision@2.json": decision2 });
   const root = ledgerWithOwners();
   ledger(["new", "run", "first", "--in", "projects/alpha", "--title", "First"], root);
   writeJson(join(root, RUN, "decisions/1.json"), { schema: "budget-decision@2", note: "approved" });
-  expect(ledger(["validate"], root, tool)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
   expect(problems(ledger(["validate"], root))).toStrictEqual([`${RUN}/decisions/1.json: schema: budget-decision@2 is not a version the ledger accepts`]);
+  writeJson(join(root, "schema", "budget-decision@2.json"), decision2);
+  expect(ledger(["validate"], root)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
   writeJson(join(root, RUN, "decisions/1.json"), { schema: "budget-decision@2" });
-  expect(problems(ledger(["validate"], root, tool))).toStrictEqual([`${RUN}/decisions/1.json: note: is required`]);
+  expect(problems(ledger(["validate"], root))).toStrictEqual([`${RUN}/decisions/1.json: note: is required`]);
 });

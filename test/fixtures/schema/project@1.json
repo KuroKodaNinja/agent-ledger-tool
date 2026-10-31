@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A project's manifest, projects/<name>/project.json",
+  "type": "object",
+  "required": ["schema", "name", "title", "status", "summary", "programs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "project@1" },
+    "name": { "$ref": "defs@1.json#/$defs/name" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "status": { "$ref": "defs@1.json#/$defs/status", "default": "active" },
+    "summary": { "type": "string", "minLength": 1 },
+    "repository": { "$ref": "defs@1.json#/$defs/repository" },
+    "programs": { "description": "The programs this project belongs to.", "type": "array", "items": { "$ref": "defs@1.json#/$defs/name" }, "uniqueItems": true, "default": [] }
+  }
+}

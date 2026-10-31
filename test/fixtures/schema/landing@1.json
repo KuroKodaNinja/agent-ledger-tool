@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A goal's landing: the attestation it rests on, the commit landed, the branch, and the pull request opened for the operator's merge",
+  "type": "object",
+  "required": ["schema", "date", "attestation", "commit", "branch", "pullRequest"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "landing@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "attestation": { "description": "The attestation the landing rests on, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "commit": { "description": "The commit landed on the branch, as read from the remote.", "$ref": "defs@1.json#/$defs/commit" },
+    "branch": { "description": "The branch the commit was pushed to.", "type": "string", "minLength": 1 },
+    "pullRequest": { "description": "The pull request opened for the operator's merge.", "$ref": "defs@1.json#/$defs/pullRequest" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A round's pass: the round, the commit it judged, the seats that voted, and the operator's vouches that stood in for any seat",
+  "type": "object",
+  "required": ["schema", "date", "round", "commit", "seats", "vouches"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "attestation@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "round": { "description": "The round that passed, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "commit": { "description": "The commit the round judged.", "$ref": "defs@1.json#/$defs/commit" },
+    "seats": { "description": "The seats that voted, as the kernel seated them.", "type": "array", "items": { "$ref": "limits@1.json#/$defs/seat" }, "minItems": 1, "uniqueItems": true },
+    "vouches": { "description": "The operator's vouches that stood in for a seat's vote, by their paths in the ledger; empty when every seat passed.", "type": "array", "items": { "$ref": "defs@1.json#/$defs/path" }, "uniqueItems": true },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

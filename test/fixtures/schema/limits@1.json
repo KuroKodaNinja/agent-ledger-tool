@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A program's limits: what its kernel may run, resolve, seat, reach and spend, frozen until the next version",
+  "type": "object",
+  "required": [
+    "schema",
+    "date",
+    "images",
+    "harnesses",
+    "ladders",
+    "panelProfiles",
+    "egress",
+    "budget",
+    "wallClock",
+    "tree",
+    "supervisor",
+    "kit"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "limits@1"
+    },
+    "date": {
+      "$ref": "defs@1.json#/$defs/date"
+    },
+    "images": {
+      "description": "The image each role runs in, by digest; the kernel has one, every other role one per harness. Nothing else may run.",
+      "type": "object",
+      "required": [
+        "kernel",
+        "supervisor",
+        "builder",
+        "verifier"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kernel": {
+          "$ref": "#/$defs/image"
+        },
+        "supervisor": {
+          "$ref": "#/$defs/imagesByHarness"
+        },
+        "builder": {
+          "$ref": "#/$defs/imagesByHarness"
+        },
+        "verifier": {
+          "$ref": "#/$defs/imagesByHarness"
+        }
+      }
+    },
+    "harnesses": {
+      "description": "Each harness by name: the command its container runs, and the model families it serves.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "command",
+          "families"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "families": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "defs@1.json#/$defs/name"
+            }
+          }
+        }
+      }
+    },
+    "ladders": {
+      "description": "Each model family's ladder: difficulty n resolves to the nth rung of the climb, counted from 0, and any difficulty past the climb to the top rung, whose effort is xhigh. Max is never a rung: builders at max showed small gains and over-thinking for its cost.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ladder"
+      }
+    },
+    "maxDifficulty": {
+      "description": "A cap on difficulty below a ladder's end.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "panelProfiles": {
+      "description": "Each scope class's seats, which the kernel seats as given.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/$defs/seat"
+        }
+      }
+    },
+    "egress": {
+      "description": "Each role's egress policy in the sandbox runtime's own form, which its parser checks and the ledger does not interpret.",
+      "type": "object",
+      "required": [
+        "kernel",
+        "supervisor",
+        "builder",
+        "verifier"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kernel": {
+          "type": "object"
+        },
+        "supervisor": {
+          "type": "object"
+        },
+        "builder": {
+          "type": "object"
+        },
+        "verifier": {
+          "type": "object"
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": [
+        "perGoal",
+        "perProgram",
+        "unit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "perGoal": {
+          "$ref": "#/$defs/amount"
+        },
+        "perProgram": {
+          "$ref": "#/$defs/amount"
+        },
+        "unit": {
+          "description": "What the amounts count: seconds of child wall-clock, the one unit the kernel measures itself.",
+          "const": "seconds"
+        }
+      }
+    },
+    "wallClock": {
+      "type": "object",
+      "required": [
+        "builderSeconds",
+        "verifierSeconds",
+        "idleSeconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "builderSeconds": {
+          "$ref": "#/$defs/amount"
+        },
+        "verifierSeconds": {
+          "$ref": "#/$defs/amount"
+        },
+        "idleSeconds": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "tree": {
+      "description": "The agent tree's depth, supervisor to child to grandchild, and width, children at once.",
+      "type": "object",
+      "required": [
+        "depth",
+        "width"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "depth": {
+          "$ref": "#/$defs/amount"
+        },
+        "width": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "parallelGoals": {
+      "description": "Goals building at once. Phase 0 builds one.",
+      "const": 1,
+      "default": 1
+    },
+    "acceptsSupervisorGoals": {
+      "description": "Whether a split may create goals the supervisor wrote.",
+      "type": "boolean",
+      "default": false
+    },
+    "maxSplitGoals": {
+      "description": "Children per split.",
+      "type": "integer",
+      "minimum": 1,
+      "default": 8
+    },
+    "maxSplits": {
+      "description": "Splits per lineage.",
+      "type": "integer",
+      "minimum": 0,
+      "default": 1
+    },
+    "supervisor": {
+      "description": "The supervisor's seat: a fixed harness, model and effort, not a rung.",
+      "type": "object",
+      "required": [
+        "harness",
+        "model",
+        "effort"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "harness": {
+          "$ref": "defs@1.json#/$defs/name"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "$ref": "#/$defs/effort"
+        }
+      }
+    },
+    "stagnationRepeats": {
+      "description": "Consecutive rounds with identical findings that fail a goal.",
+      "type": "integer",
+      "minimum": 1,
+      "default": 2
+    },
+    "kit": {
+      "description": "The guidance kit the children and the kernel's checks use, by commit.",
+      "type": "object",
+      "required": [
+        "commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "$ref": "defs@1.json#/$defs/commit"
+        }
+      }
+    },
+    "links": {
+      "$ref": "defs@1.json#/$defs/links"
+    }
+  },
+  "$defs": {
+    "effort": {
+      "description": "A model's effort, capped at xhigh: max is never a rung or a seat.",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image": {
+      "type": "object",
+      "required": [
+        "image",
+        "digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "imagesByHarness": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/image"
+      }
+    },
+    "rung": {
+      "type": "object",
+      "required": [
+        "model",
+        "effort"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "$ref": "#/$defs/effort"
+        }
+      }
+    },
+    "seat": {
+      "type": "object",
+      "required": [
+        "role",
+        "model",
+        "effort"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "$ref": "defs@1.json#/$defs/name"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "$ref": "#/$defs/effort"
+        }
+      }
+    },
+    "ladder": {
+      "type": "object",
+      "required": [
+        "climb",
+        "top"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "climb": {
+          "description": "The rungs below the top, in order; may be empty.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rung"
+          }
+        },
+        "top": {
+          "description": "The last rung, the ceiling, at xhigh.",
+          "type": "object",
+          "required": [
+            "model",
+            "effort"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "effort": {
+              "const": "xhigh"
+            }
+          }
+        }
+      }
+    }
+  }
+}

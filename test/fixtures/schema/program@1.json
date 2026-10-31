@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A cross-project program's manifest, programs/<name>/program.json",
+  "type": "object",
+  "required": ["schema", "name", "title", "status", "summary", "projects"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "program@1" },
+    "name": { "$ref": "defs@1.json#/$defs/name" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "status": { "$ref": "defs@1.json#/$defs/status", "default": "active" },
+    "summary": { "type": "string", "minLength": 1 },
+    "projects": { "description": "The projects the program spans.", "type": "array", "items": { "$ref": "defs@1.json#/$defs/name" }, "minItems": 1, "uniqueItems": true }
+  }
+}

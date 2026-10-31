@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A research note's frontmatter: what was found out",
+  "type": "object",
+  "required": ["schema", "title", "date"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "research@1" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

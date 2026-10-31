@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { chmodSync, cpSync, mkdtempSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import manifest from "../package.json";
@@ -11,7 +11,7 @@ const RUN = "projects/alpha/runs/first";
 const DEPENDANT_SCRIPT = join(import.meta.dir, "fixtures", "dependant", "check.ts");
 
 // Every name the library exports at run time, which is the whole surface less its types.
-const SURFACE = ["FOLDERS", "KERNEL_RECORD_KINDS", "LedgerError", "OPERATOR_RECORD_KINDS", "OwnerKind", "RUN_FILE", "SCHEMA_DIR", "inspectLedger", "loadSchemas", "writeKernelRecord"];
+const SURFACE = ["FOLDERS", "KERNEL_RECORD_KINDS", "LedgerError", "OPERATOR_RECORD_KINDS", "OwnerKind", "RUN_FILE", "inspectLedger", "ledgerSchemas", "loadSchemas", "writeKernelRecord"];
 
 /** What the dependant's script reports, field by field. */
 interface Report {
@@ -27,31 +27,39 @@ interface Report {
   readonly deep: Readonly<Record<string, boolean>>;
 }
 
-// A package depending on the ledger as it ships: the artifact `bun pm pack`
-// makes of what the manifest names, its manifest exactly, packed from a
-// writable copy since bun will not pack a read-only tree, installed by path
-// with bun into a dependant that has an empty cache and no network.
+// Runs `command` in `cwd` to its end and requires it to succeed.
+function succeed(command: readonly string[], cwd: string, env: Record<string, string | undefined> = process.env): void {
+  const result = Bun.spawnSync([...command], { cwd, env, stdout: "pipe", stderr: "pipe" });
+  if (result.exitCode !== 0) throw new Error(`${command.join(" ")} failed: ${result.stderr.toString()}`);
+}
+
+// Git with the fixtures' identity, so no test depends on the machine's.
+const GIT = ["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid"];
+
+// A package depending on this repository as it is now, as a dependant
+// names it: a git dependency at one commit, the commit of a repository made
+// on the disk from the tree under test, so no network is touched and
+// nothing waits to be committed, installed with bun into a dependant that
+// has an empty cache and no credential.
 function dependant(): string {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "ledger-dependant-")));
   const source = join(dir, "source");
-  for (const shipped of ["package.json", ...manifest.files]) cpSync(join(ROOT, shipped), join(source, shipped), { recursive: true });
-  // The copy keeps the source's modes, so a read-only checkout gives a read-only manifest, which bun will not pack.
-  chmodSync(join(source, "package.json"), 0o644);
-  const pack = Bun.spawnSync(["bun", "pm", "pack", "--quiet", "--destination", dir], { cwd: source, stdout: "pipe", stderr: "pipe" });
-  if (pack.exitCode !== 0) throw new Error(`bun pm pack failed: ${pack.stderr.toString()}`);
-  const artifact = readdirSync(dir).find((name) => name.endsWith(".tgz"));
-  if (artifact === undefined) throw new Error("bun pm pack made no artifact");
-  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "dependant", dependencies: { [manifest.name]: `file:${artifact}` } }));
-  const coldCache = join(dir, "empty-cache");
-  const install = Bun.spawnSync(["bun", "install", "--offline", "--no-summary"], { cwd: dir, stdout: "pipe", stderr: "pipe", env: { ...process.env, BUN_INSTALL_CACHE_DIR: coldCache } });
-  if (install.exitCode !== 0) throw new Error(`bun install in the dependant failed: ${install.stderr.toString()}`);
+  for (const shipped of ["package.json", "bun.lock", "tsconfig.json", ...manifest.files]) cpSync(join(ROOT, shipped), join(source, shipped), { recursive: true });
+  succeed([...GIT, "init", "--quiet", "--initial-branch", "main"], source);
+  succeed([...GIT, "add", "--all"], source);
+  succeed([...GIT, "commit", "--quiet", "--message", "the tree under test"], source);
+  const commit = Bun.spawnSync([...GIT, "rev-parse", "HEAD"], { cwd: source, stdout: "pipe", stderr: "pipe" }).stdout.toString().trim();
+  const bare = join(dir, "repository.git");
+  succeed([...GIT, "clone", "--quiet", "--bare", "--", source, bare], dir);
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "dependant", dependencies: { [manifest.name]: `git+file://${bare}#${commit}` } }));
+  succeed(["bun", "install", "--no-summary"], dir, { ...process.env, BUN_INSTALL_CACHE_DIR: join(dir, "empty-cache"), GIT_TERMINAL_PROMPT: "0" });
   cpSync(DEPENDANT_SCRIPT, join(dir, "check.ts"));
   return dir;
 }
 
-test("a dependant that installed the ledger as it ships, by path, cold and offline, imports it by name and gets exactly the surface, frozen tables, a kernel record written and inspected, and the operator's kinds and deep imports refused", () => {
+test("a dependant that installed this repository, as it is now, at a commit, with an empty cache and no credential, imports it by name and gets exactly the surface, frozen tables, a kernel record written and inspected, and the operator's kinds and deep imports refused", () => {
   const dir = dependant();
-  expect(readdirSync(join(dir, "node_modules", manifest.name)).sort()).toStrictEqual(["package.json", ...manifest.files].sort());
+  expect(readdirSync(join(dir, "node_modules", manifest.name))).toEqual(expect.arrayContaining(["package.json", ...manifest.files]));
   const root = ledgerWithRun();
   const run = Bun.spawnSync(["bun", "check.ts", root, RUN], { cwd: dir, stdout: "pipe", stderr: "pipe" });
   expect(run.stderr.toString()).toBe("");

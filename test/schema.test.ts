@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test";
-import { rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { emptyLedger, ledger, problems, toolWithSchemas } from "./support.ts";
+import { chmodSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { emptyLedger, ledger, ledgerWithSchemas, problems, withoutSuperuser } from "./support.ts";
 
-// Each test runs a copy of the tool holding schemas of its own, on a ledger
-// whose manifest the test writes, and observes only what the tool prints.
+// Each test runs the tool on a ledger carrying schemas of its own and a
+// manifest the test writes, and observes only what the tool prints.
 function validate(schemas: Readonly<Record<string, unknown>>, manifest: string | object) {
-  const root = emptyLedger();
+  const root = ledgerWithSchemas(schemas);
   writeFileSync(join(root, "ledger.json"), typeof manifest === "string" ? manifest : JSON.stringify(manifest));
-  return ledger(["validate"], root, toolWithSchemas(schemas));
+  return ledger(["validate"], root);
 }
 
 // The tool sorts the problems in one file by message.
@@ -86,12 +86,24 @@ test("a value that conforms to a schema's if is held to its then as well; one th
   );
 });
 
-test("a schema directory that cannot be read fails the run with a message", () => {
-  const tool = toolWithSchemas({});
-  rmSync(join(dirname(tool), "..", "schema"), { recursive: true });
-  const run = ledger(["validate"], emptyLedger(), tool);
+test("a ledger whose schema directory is missing fails the run with a message", () => {
+  const root = emptyLedger();
+  rmSync(join(root, "schema"), { recursive: true });
+  const run = ledger(["validate"], root);
   expect(run).toMatchObject({ code: 1, stdout: "" });
   expect(run.stderr).toStartWith("error: cannot read the schemas in ");
+});
+
+withoutSuperuser("a ledger whose schema directory cannot be read fails the run with the same message", () => {
+  const root = emptyLedger();
+  chmodSync(join(root, "schema"), 0);
+  try {
+    const run = ledger(["validate"], root);
+    expect(run).toMatchObject({ code: 1, stdout: "" });
+    expect(run.stderr).toStartWith("error: cannot read the schemas in ");
+  } finally {
+    chmodSync(join(root, "schema"), 0o755);
+  }
 });
 
 const thing = {
