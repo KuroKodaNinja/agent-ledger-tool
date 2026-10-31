@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A program's run: the goal contracts a kernel drives through one program, and whether the run is still open",
+  "type": "object",
+  "required": ["schema", "title", "date", "status", "contracts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "run@1" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "status": { "description": "Open while the kernel may still run goals; closed once the operator ends the run.", "enum": ["open", "closed"], "default": "open" },
+    "contracts": { "description": "The goal contracts the run drives, by their paths in the ledger, in the order the operator added them.", "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "default": [] },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

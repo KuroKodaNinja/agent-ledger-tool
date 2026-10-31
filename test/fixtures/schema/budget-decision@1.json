@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The operator's answer to one budget request: an approval or a denial, and the program's ceiling in force after it",
+  "type": "object",
+  "required": ["schema", "date", "request", "outcome", "ceiling", "reason"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "budget-decision@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "request": { "description": "The budget request it answers, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "outcome": { "enum": ["approved", "denied"] },
+    "ceiling": { "description": "The program's ceiling after this decision, in the limits' budget unit: the new ceiling when approved, the standing one when denied, so a kernel reads the bound from the record and computes nothing.", "type": "integer", "minimum": 1 },
+    "reason": { "type": "string", "minLength": 1 },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

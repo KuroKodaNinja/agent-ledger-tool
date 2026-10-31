@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A goal's state after one transition: its phase, the cause when it failed, and the attempt and round in progress",
+  "type": "object",
+  "required": ["schema", "date", "goal", "phase"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "goal-state@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "goal": { "description": "The goal, by its contract's path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "phase": {
+      "description": "Where the goal is: not yet started, waiting on its dependencies, being built, its commit being collected, the panel judging, a round failed, the supervisor deciding what follows, passed, landing, delivered for the operator's merge, merged, failed on a cause, or dropped.",
+      "enum": ["pending", "blocked", "building", "collecting", "judging", "failed-round", "deciding", "passed", "landing", "delivered", "merged", "failed", "dropped"]
+    },
+    "cause": {
+      "description": "Why the goal failed, when it did: a tool call outside the limits was refused, a child's sandbox was lost, a child hit its deadline, idle or budget bound, its work was left unstaged or was not one commit or failed a check command, the remote's tip was not the pushed commit, a seat returned no structured vote, the panel failed the round, two rounds repeated the same findings, the operator denied the budget, or the goal was stopped.",
+      "enum": ["refused", "lost", "deadline", "idle", "budget", "unstaged", "not-one-commit", "check-failed", "read-back-mismatch", "no-structured-vote", "panel-failed", "stagnation", "budget-denied", "stopped"]
+    },
+    "attempt": { "description": "The attempt in progress, by its path in the ledger, while one is.", "$ref": "defs@1.json#/$defs/path" },
+    "round": { "description": "The round in progress, by its path in the ledger, while one is.", "$ref": "defs@1.json#/$defs/path" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

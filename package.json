@@ -1,5 +1,5 @@
 {
-  "name": "agent-ledger",
+  "name": "agent-ledger-tool",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -11,7 +11,6 @@
   },
   "files": [
     "README.md",
-    "schema",
     "tools"
   ],
   "scripts": {

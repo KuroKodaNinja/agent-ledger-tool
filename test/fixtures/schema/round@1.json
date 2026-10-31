@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One round of judging: the attempt, the commit judged, the profile seated, every seat's vote as cast, and the round's vote",
+  "type": "object",
+  "required": ["schema", "date", "attempt", "commit", "profile", "seats", "passed"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "round@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "attempt": { "description": "The attempt whose commit the round judged, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "commit": { "description": "The commit judged: the goal branch's tip as read back from the remote after the push, never a hash an agent reported.", "$ref": "defs@1.json#/$defs/commit" },
+    "profile": { "description": "The panel profile seated, by its name in the limits.", "$ref": "defs@1.json#/$defs/name" },
+    "seats": { "description": "Every seat as the kernel seated it, with its vote as cast.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/seat" } },
+    "passed": { "description": "The round's vote: true only when every seat passed or is vouched.", "type": "boolean" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  },
+  "$defs": {
+    "seat": {
+      "type": "object",
+      "required": ["role", "model", "effort", "vote", "confidence", "findings"],
+      "additionalProperties": false,
+      "properties": {
+        "role": { "$ref": "defs@1.json#/$defs/name" },
+        "model": { "type": "string", "minLength": 1 },
+        "effort": { "$ref": "limits@1.json#/$defs/effort" },
+        "vote": { "description": "What the seat returned: pass, fail with findings, or inconclusive with a cause.", "enum": ["pass", "fail", "inconclusive"] },
+        "confidence": { "description": "The seat's confidence in its vote, from 0 to 1, as it gave it.", "type": "number", "minimum": 0, "maximum": 1 },
+        "findings": { "description": "The seat's findings as it gave them; empty when it found nothing.", "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "cause": { "description": "Why the seat was inconclusive, as it gave it; required exactly when its vote is inconclusive.", "type": "string", "minLength": 1 }
+      },
+      "if": { "required": ["vote"], "properties": { "vote": { "const": "inconclusive" } } },
+      "then": { "required": ["cause"] }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["severity", "detail", "remediation"],
+      "additionalProperties": false,
+      "properties": {
+        "severity": { "enum": ["low", "medium", "high"] },
+        "detail": { "description": "The finding as the seat wrote it: data the ledger never interprets.", "type": "string", "minLength": 1 },
+        "remediation": { "description": "What the seat says would resolve it, as the seat wrote it.", "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A goal contract's frontmatter: the change it governs, and how that change ended",
+  "type": "object",
+  "required": ["schema", "title", "date", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "contract@1" },
+    "title": { "$ref": "defs@1.json#/$defs/title" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "status": { "enum": ["open", "landed", "dropped"], "default": "open" },
+    "pullRequest": { "description": "The pull request it governs.", "$ref": "defs@1.json#/$defs/pullRequest" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

@@ -3,9 +3,9 @@
 import { parseArgs } from "node:util";
 import { LedgerError, UsageError } from "./src/errors.ts";
 import { printable } from "./src/json.ts";
-import { DocKind, findRoot, OwnerKind, RunKind, SCHEMA_DIR } from "./src/layout.ts";
+import { DocKind, findRoot, OwnerKind, RunKind } from "./src/layout.ts";
 import { createDocument, createProgram, createProject, createRun } from "./src/scaffold.ts";
-import { loadSchemas, type SchemaSet } from "./src/schema.ts";
+import { ledgerSchemas, type SchemaSet } from "./src/schema.ts";
 import { inspectLedger } from "./src/validate.ts";
 
 const USAGE = `usage:
@@ -100,7 +100,7 @@ function main(argv: readonly string[]): number {
   if (unusable !== undefined) throw new UsageError(`${[command, kind].filter(Boolean).join(" ")} takes no --${unusable}`);
   if (rest[0] !== undefined) throw new UsageError(`unexpected argument ${JSON.stringify(rest[0])}`);
   const root = values.root ?? findRoot(process.cwd());
-  const schemas = loadSchemas(SCHEMA_DIR);
+  const schemas = ledgerSchemas(root);
   if (!isCreatable(kind)) return validate(root, schemas);
   console.log(printable(`created ${create(root, schemas, kind, required(name, "a name"), values)}`));
   return ExitCode.Ok;

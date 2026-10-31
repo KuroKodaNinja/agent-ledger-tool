@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One attempt at a goal: the rung the kernel resolved its difficulty to, the commit it builds from, and the builder spawned",
+  "type": "object",
+  "required": ["schema", "date", "goal", "difficulty", "rung", "seed", "limits", "builder"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "attempt@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "goal": { "description": "The goal's contract, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "difficulty": { "description": "The attempt's difficulty, counted from 0, which the family's ladder resolves to a rung.", "type": "integer", "minimum": 0 },
+    "rung": {
+      "description": "The rung the difficulty resolved to: what the builder ran as.",
+      "type": "object",
+      "required": ["model", "effort", "harness", "image"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "effort": { "$ref": "limits@1.json#/$defs/effort" },
+        "harness": { "description": "The harness the builder ran in, by its name in the limits.", "$ref": "defs@1.json#/$defs/name" },
+        "image": { "description": "The image the builder ran in, by name and digest.", "$ref": "limits@1.json#/$defs/image" }
+      }
+    },
+    "seed": { "description": "The commit the builder started from: the program branch's tip as read from the remote.", "$ref": "defs@1.json#/$defs/commit" },
+    "limits": { "description": "The limits in force for the attempt, by their path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "builder": { "description": "The builder's sandbox handle.", "$ref": "defs@1.json#/$defs/name" },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

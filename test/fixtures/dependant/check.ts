@@ -3,7 +3,7 @@
 // against a scratch ledger, and prints what it found and did as JSON for the
 // test to judge. Arguments: the scratch ledger's root, and the run to write
 // into.
-import * as ledger from "agent-ledger";
+import * as ledger from "agent-ledger-tool";
 
 const [root, run] = process.argv.slice(2) as [string, string];
 const halt = { schema: "halt@1", date: "2026-10-30", cause: "operator-stop", goals: ["projects/alpha/contracts/pr1"] };
@@ -22,7 +22,7 @@ function refusal(work: () => unknown): string {
 // Whether a module of the ledger resolves from here by its deep path, which the exports map should forbid.
 function resolves(module: string): boolean {
   try {
-    Bun.resolveSync(`agent-ledger/${module}`, import.meta.dir);
+    Bun.resolveSync(`agent-ledger-tool/${module}`, import.meta.dir);
     return true;
   } catch {
     return false;
@@ -30,7 +30,7 @@ function resolves(module: string): boolean {
 }
 
 const written = ledger.writeKernelRecord(root, { path: `${run}/halt.json`, record: halt });
-const inspection = ledger.inspectLedger(root, ledger.loadSchemas(ledger.SCHEMA_DIR));
+const inspection = ledger.inspectLedger(root, ledger.ledgerSchemas(root));
 console.log(
   JSON.stringify({
     surface: Object.keys(ledger).sort(),

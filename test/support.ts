@@ -19,49 +19,49 @@ export interface Run {
   readonly stderr: string;
 }
 
-/** Runs the ledger tool, by default the one under test, with `args` in `cwd`. */
-export function ledger(args: readonly string[], cwd: string, tool: string = TOOL): Run {
-  const result = Bun.spawnSync([process.execPath, tool, ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+/** Runs the ledger tool under test with `args` in `cwd`. */
+export function ledger(args: readonly string[], cwd: string): Run {
+  const result = Bun.spawnSync([process.execPath, TOOL, ...args], { cwd, stdout: "pipe", stderr: "pipe" });
   return { code: result.exitCode, stdout: result.stdout.toString(), stderr: result.stderr.toString() };
 }
 
 /** The manifest of a valid, empty ledger. */
 export const LEDGER_MANIFEST = { schema: "ledger@1", name: "test-ledger", title: "A ledger for a test" };
 
-/**
- * A copy of the tool under test that validates against `schemas` instead of the ledger's own, each written as
- * given: a string as the file's text, anything else as JSON. Returns the copy's entry point.
- */
-export function toolWithSchemas(schemas: Readonly<Record<string, unknown>>): string {
-  const copy = realpathSync(mkdtempSync(join(tmpdir(), "ledger-tool-")));
-  cpSync(dirname(TOOL), join(copy, "tools"), { recursive: true });
-  mkdirSync(join(copy, "schema"));
-  for (const [name, schema] of Object.entries(schemas)) {
-    writeFileSync(join(copy, "schema", name), typeof schema === "string" ? schema : JSON.stringify(schema));
-  }
-  return join(copy, "tools", "ledger.ts");
-}
+/** The schemas the tests' ledgers carry: one ledger's set, kept as data under the fixtures. */
+export const FIXTURE_SCHEMAS = join(import.meta.dir, "fixtures", "schema");
 
 /**
- * A copy of the tool under test with a copy of the schemas it ships with, changed by `changes`: each schema
- * file named is written as JSON, or removed when its value is null. Returns the copy's entry point.
+ * A ledger in its own temporary directory whose schema directory holds exactly `schemas`, each written as
+ * given: a string as the file's text, anything else as JSON. Its manifest is `manifest`. Returns its root.
  */
-export function toolWithShippedSchemas(changes: Readonly<Record<string, unknown>>): string {
-  const tool = toolWithSchemas({});
-  const schemas = join(dirname(tool), "..", "schema");
-  cpSync(join(dirname(TOOL), "..", "schema"), schemas, { recursive: true });
-  for (const [name, schema] of Object.entries(changes)) {
-    if (schema === null) rmSync(join(schemas, name));
-    else writeFileSync(join(schemas, name), JSON.stringify(schema));
-  }
-  return tool;
-}
-
-/** A fresh, empty, valid ledger in its own temporary directory. */
-export function emptyLedger(manifest: unknown = LEDGER_MANIFEST): string {
+export function ledgerWithSchemas(schemas: Readonly<Record<string, unknown>>, manifest: unknown = LEDGER_MANIFEST): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "ledger-test-")));
   writeJson(join(root, "ledger.json"), manifest);
+  mkdirSync(join(root, "schema"));
+  for (const [name, schema] of Object.entries(schemas)) {
+    writeFileSync(join(root, "schema", name), typeof schema === "string" ? schema : JSON.stringify(schema));
+  }
   return root;
+}
+
+/**
+ * A ledger in its own temporary directory carrying the fixture schemas changed by `changes`: each schema file
+ * named is written as JSON, or removed when its value is null. Returns its root.
+ */
+export function ledgerWithChangedSchemas(changes: Readonly<Record<string, unknown>>, manifest: unknown = LEDGER_MANIFEST): string {
+  const root = ledgerWithSchemas({}, manifest);
+  cpSync(FIXTURE_SCHEMAS, join(root, "schema"), { recursive: true });
+  for (const [name, schema] of Object.entries(changes)) {
+    if (schema === null) rmSync(join(root, "schema", name));
+    else writeFileSync(join(root, "schema", name), JSON.stringify(schema));
+  }
+  return root;
+}
+
+/** A fresh, empty, valid ledger in its own temporary directory, carrying the fixture schemas. */
+export function emptyLedger(manifest: unknown = LEDGER_MANIFEST): string {
+  return ledgerWithChangedSchemas({}, manifest);
 }
 
 /** A ledger holding project alpha and program group, which spans it. */

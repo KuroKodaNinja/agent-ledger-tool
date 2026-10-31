@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The program's halt: why it stopped, and the goals that were in flight",
+  "type": "object",
+  "required": ["schema", "date", "cause", "goals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "halt@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "cause": { "description": "Why the program stopped: a goal stagnated, the operator stopped it, the operator denied a budget that left no goal runnable, or the supervisor stopped it.", "enum": ["stagnation", "operator-stop", "budget-denied", "supervisor-stop"] },
+    "goals": { "description": "The goals in flight when the program halted, by their contracts' paths in the ledger; empty when none was.", "type": "array", "items": { "$ref": "defs@1.json#/$defs/path" }, "uniqueItems": true },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

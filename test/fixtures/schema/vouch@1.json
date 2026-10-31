@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The operator's vouch for one inconclusive seat of one round, naming the evidence that stands in for its vote",
+  "type": "object",
+  "required": ["schema", "date", "round", "seat", "cause", "evidence", "blob", "reason"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "vouch@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "round": { "description": "The round whose seat is vouched, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "seat": { "description": "The seat's role.", "$ref": "defs@1.json#/$defs/name" },
+    "cause": { "description": "Why the seat was inconclusive.", "type": "string", "minLength": 1 },
+    "evidence": { "description": "What stands in for the vote, by its path in the ledger.", "$ref": "defs@1.json#/$defs/path" },
+    "blob": { "description": "The git blob hash of the evidence as vouched, so a later edit is visible.", "type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$" },
+    "reason": { "type": "string", "minLength": 1 },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}
