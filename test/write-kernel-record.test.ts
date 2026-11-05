@@ -41,6 +41,26 @@ test("the kernel's write puts one record inside a run, creating the directories 
   expect(ledger(["validate"], root)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
 });
 
+test("the kernel's write writes a supervisor run's start and end, and a halt the run can cause, and the written records pass validate", () => {
+  const root = ledgerWithRun();
+  const seat = { harness: "claude-code", model: "claude-sonnet-5-5", effort: "medium", image: { image: "registry.example/claude-code:1", digest: `sha256:${"a".repeat(64)}` } };
+  const run = { schema: "supervision@1", date: "2026-10-30", number: 1, try: 1, ask: { kind: "decide", goal: CONTRACT, round: 1 }, handle: "kernel-first-s1-t1-supervisor", seat, limits: `${RUN}/limits/1.json`, started: "2026-10-30T10:00:00.000Z" };
+  // A run has one end, so each end a run can have is given a run of its own.
+  const ends = ["answered", "unanswered", "lost", "deadline"].flatMap((end, index): [string, JsonObject][] => {
+    const number = index + 1;
+    return [
+      [`${RUN}/supervisions/${number}-1.json`, { ...run, number, handle: `kernel-first-s${number}-t1-supervisor` }],
+      [`${RUN}/supervisions/${number}-1-end.json`, { schema: "supervision-end@1", date: "2026-10-30", number, try: 1, end }],
+    ];
+  });
+  const failed = { ...halt, cause: "supervisor-failed" };
+  for (const [path, record] of [...ends, [`${RUN}/halt.json`, failed] as [string, JsonObject]]) {
+    expect(writeKernelRecord(root, { path, record })).toBe(path);
+    expect(JSON.parse(readFileSync(join(root, path), "utf8"))).toStrictEqual(record);
+  }
+  expect(ledger(["validate"], root)).toMatchObject({ code: 0, stdout: "the ledger is valid\n" });
+});
+
 test("the kernel's write writes a round, every seat's vote as cast, and the written record passes validate", () => {
   const root = ledgerWithRun();
   expect(writeKernelRecord(root, { path: ROUND, record: round })).toBe(ROUND);
@@ -52,7 +72,7 @@ test("the kernel's write refuses the operator's kinds, an invalid record, a path
   const root = ledgerWithRun();
   writeKernelRecord(root, { path: `${RUN}/halt.json`, record: halt });
   const before = entriesUnder(join(root, RUN));
-  const writes = "which a kernel does not write; a kernel writes attempt, round, budget-grant, budget-request, attestation, landing, goal-state, halt";
+  const writes = "which a kernel does not write; a kernel writes attempt, round, budget-grant, budget-request, attestation, landing, goal-state, halt, supervision, supervision-end";
   const notInRun = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens";
   const refusals: readonly (readonly [string, JsonObject, string])[] = [
     [`${RUN}/decisions/1.json`, decision, `${RUN}/decisions/1.json: schema: is a budget-decision record, ${writes}`],

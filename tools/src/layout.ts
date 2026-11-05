@@ -86,7 +86,7 @@ export const RUN_FILE = "run.json";
 export const OPERATOR_RECORD_KINDS: readonly string[] = Object.freeze(["limits", "budget-decision", "vouch"]);
 
 /** The kinds of record a kernel writes into a run, through the tool's kernel write and nothing else: what the run produced. */
-export const KERNEL_RECORD_KINDS: readonly string[] = Object.freeze(["attempt", "round", "budget-grant", "budget-request", "attestation", "landing", "goal-state", "halt"]);
+export const KERNEL_RECORD_KINDS: readonly string[] = Object.freeze(["attempt", "round", "budget-grant", "budget-request", "attestation", "landing", "goal-state", "halt", "supervision", "supervision-end"]);
 
 /** The kinds of record a run's files may hold, each validated against the kind its own `schema` field names. */
 export const RUN_RECORD_KINDS: readonly string[] = Object.freeze([...OPERATOR_RECORD_KINDS, ...KERNEL_RECORD_KINDS]);

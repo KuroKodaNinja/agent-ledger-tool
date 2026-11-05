@@ -81,7 +81,7 @@ test("everything in a run that is not a record of a kind a run holds is reported
     `${RUN}/old.json: schema: vouch@9 is not a version the ledger accepts`,
     `${RUN}/outer: holds no record`,
     `${RUN}/outer/inner: holds no record`,
-    `${RUN}/plan.json: schema: is a plan record, which a run does not hold; a run holds limits, budget-decision, vouch, attempt, round, budget-grant, budget-request, attestation, landing, goal-state, halt`,
+    `${RUN}/plan.json: schema: is a plan record, which a run does not hold; a run holds limits, budget-decision, vouch, attempt, round, budget-grant, budget-request, attestation, landing, goal-state, halt, supervision, supervision-end`,
     `${RUN}/unnamed.json: schema: must name a kind and major version, such as limits@1`,
     `${RUN}/Upper: ${notInRun}`,
     `${RUN}/Upper.json: ${notInRun}`,
