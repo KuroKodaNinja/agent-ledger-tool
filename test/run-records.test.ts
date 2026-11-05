@@ -57,6 +57,17 @@ const round = {
   ],
   passed: false,
 };
+const supervision = {
+  schema: "supervision@1",
+  date: DATE,
+  number: 1,
+  try: 1,
+  ask: { kind: "start" },
+  handle: "kernel-first-s1-t1-supervisor",
+  seat: { harness: "claude-code", model: "claude-sonnet-5-5", effort: "medium", image },
+  limits: `${RUN}/limits/1.json`,
+  started: "2026-10-30T10:00:00.000Z",
+};
 /** One valid record of each kind the kernel writes, by its path in the run. */
 const kernelRecords: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   [ATTEMPT]: {
@@ -76,6 +87,11 @@ const kernelRecords: Readonly<Record<string, Readonly<Record<string, unknown>>>>
   [`${RUN}/goals/pr1/landing.json`]: { schema: "landing@1", date: DATE, attestation: ATTESTATION, commit: SHA, branch: "runs/first", pullRequest: "example/alpha#12" },
   [`${RUN}/goals/pr1/state.json`]: { schema: "goal-state@1", date: DATE, goal: CONTRACT, phase: "judging", attempt: ATTEMPT, round: ROUND },
   [`${RUN}/halt.json`]: { schema: "halt@1", date: DATE, cause: "operator-stop", goals: [CONTRACT] },
+  [`${RUN}/supervisions/1-1.json`]: supervision,
+  [`${RUN}/supervisions/1-1-end.json`]: { schema: "supervision-end@1", date: DATE, number: 1, try: 1, end: "unanswered" },
+  [`${RUN}/supervisions/1-2.json`]: { ...supervision, try: 2, handle: "kernel-first-s1-t2-supervisor" },
+  [`${RUN}/supervisions/1-2-end.json`]: { schema: "supervision-end@1", date: DATE, number: 1, try: 2, end: "answered" },
+  [`${RUN}/supervisions/2-1.json`]: { ...supervision, number: 2, ask: { kind: "decide", goal: CONTRACT, round: 1 }, handle: "kernel-first-s2-t1-supervisor" },
 };
 
 test("a run holding a limits record and a budget decision validates, and an unknown version of either kind is refused", () => {
@@ -269,9 +285,23 @@ test("the kernel's kinds refuse an effort above xhigh, a phase, cause, vote or s
     `${RUN}/goals/pr1/state.json: goal: ${malformed}`,
     `${RUN}/goals/pr1/state.json: phase: must be one of "pending", "blocked", "building", "collecting", "judging", "failed-round", "deciding", "passed", "landing", "delivered", "merged", "failed", "dropped"`,
     `${RUN}/goals/pr1/state.json: round: ${malformed}`,
-    `${RUN}/halt.json: cause: must be one of "stagnation", "operator-stop", "budget-denied", "supervisor-stop"`,
+    `${RUN}/halt.json: cause: must be one of "stagnation", "operator-stop", "budget-denied", "supervisor-stop", "supervisor-failed"`,
     `${RUN}/halt.json: goals[0]: ${malformed}`,
     `${RUN}/requests/1.json: goal: ${malformed}`,
     `${RUN}/requests/1.json: spent: must be at least 0`,
+  ]);
+});
+
+test("a supervisor run's records refuse a third try, an ask of no known kind, an end of no known kind, and a halt for no known cause, each at its field", () => {
+  const root = ledgerWithRun();
+  writeJson(join(root, RUN, "limits/1.json"), limits);
+  writeJson(join(root, RUN, "supervisions/1-3.json"), { ...supervision, try: 3, ask: { kind: "later" } });
+  writeJson(join(root, RUN, "supervisions/1-3-end.json"), { schema: "supervision-end@1", date: DATE, number: 1, try: 1, end: "shrugged" });
+  writeJson(join(root, RUN, "halt.json"), { schema: "halt@1", date: DATE, cause: "supervisor-bored", goals: [] });
+  expect(problems(ledger(["validate"], root))).toStrictEqual([
+    `${RUN}/halt.json: cause: must be one of "stagnation", "operator-stop", "budget-denied", "supervisor-stop", "supervisor-failed"`,
+    `${RUN}/supervisions/1-3-end.json: end: must be one of "answered", "unanswered", "lost", "deadline"`,
+    `${RUN}/supervisions/1-3.json: ask.kind: must be one of "start", "decide"`,
+    `${RUN}/supervisions/1-3.json: try: must be at most 2`,
   ]);
 });

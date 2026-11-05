@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "How one supervisor run ended: answered, or not, and why",
+  "type": "object",
+  "required": ["schema", "date", "number", "try", "end"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "supervision-end@1" },
+    "date": { "$ref": "defs@1.json#/$defs/date" },
+    "number": { "description": "The ask's number, as its supervision@1 records it.", "type": "integer", "minimum": 1 },
+    "try": { "description": "The run's try, as its supervision@1 records it.", "type": "integer", "minimum": 1, "maximum": 2 },
+    "end": {
+      "description": "answered: the decision was made and the kernel ended the sandbox; unanswered: the sandbox ended with no decision made; lost: the sandbox was gone; deadline: it ran past its wall clock and the kernel ended it.",
+      "enum": ["answered", "unanswered", "lost", "deadline"]
+    },
+    "links": { "$ref": "defs@1.json#/$defs/links" }
+  }
+}

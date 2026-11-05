@@ -41,7 +41,7 @@ lives:
 | `program` | `programs/<name>/program.json` |
 | `plan`, `decision`, `contract`, `research`, `handoff` | a project's or program's `plans/`, `decisions/`, `contracts/`, `research/`, `handoffs/`, each a Markdown document with YAML frontmatter; a contract is a directory holding `contract.md` |
 | `run` | `projects/<name>/runs/<program>/`, a directory of JSON records |
-| a run's record kinds | files in a run: the operator's `limits`, `budget-decision` and `vouch`, and the kernel's `attempt`, `round`, `budget-grant`, `budget-request`, `attestation`, `landing`, `goal-state` and `halt` |
+| a run's record kinds | files in a run: the operator's `limits`, `budget-decision` and `vouch`, and the kernel's `attempt`, `round`, `budget-grant`, `budget-request`, `attestation`, `landing`, `goal-state`, `halt`, `supervision` and `supervision-end` |
 
 ## The rules `validate` enforces
 
@@ -163,9 +163,10 @@ does not resolve.
 
 A run's records have two writers. The operator writes `limits`,
 `budget-decision` and `vouch` records. A kernel writes the other kinds,
-`attempt` to `halt`, through `writeKernelRecord`, which validates with
-the ledger's schemas, as `validate` does, and writes only those kinds: a
-kernel asking to write one of the operator's is refused. It also refuses
+`attempt` to `supervision-end` in the table above, through
+`writeKernelRecord`, which validates with the ledger's schemas, as
+`validate` does, and writes only those kinds: a kernel asking to write
+one of the operator's is refused. It also refuses
 a ledger that `validate` does not pass, a path outside an existing run or
 already taken, and a record that fails the check `validate` applies, and
 it takes back a write the ledger would not be valid with, or could not

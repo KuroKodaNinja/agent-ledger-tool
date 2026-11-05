@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One supervisor run: the decision the kernel asked of a supervisor, the seat it ran in, and when its sandbox was made",
+  "type": "object",
+  "required": [
+    "schema",
+    "date",
+    "number",
+    "try",
+    "ask",
+    "handle",
+    "seat",
+    "limits",
+    "started"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "supervision@1"
+    },
+    "date": {
+      "$ref": "defs@1.json#/$defs/date"
+    },
+    "number": {
+      "description": "The ask's number in the program, counted from 1 in the order the kernel asked.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "try": {
+      "description": "Which run of the ask this is: 1, or 2 when the first ended with the ask unanswered.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
+    "ask": {
+      "description": "What the supervisor is asked to decide: which goals to start, at the program's start; or, after a failed round, what to do with one goal, which goal and round name. Goal and round are given exactly for a decide ask.",
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "start",
+            "decide"
+          ]
+        },
+        "goal": {
+          "description": "The goal waiting in deciding, by its contract's path in the ledger.",
+          "$ref": "defs@1.json#/$defs/path"
+        },
+        "round": {
+          "description": "The failed round the decision follows, numbered from 1 across the goal.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "handle": {
+      "description": "The supervisor's sandbox handle.",
+      "$ref": "defs@1.json#/$defs/name"
+    },
+    "seat": {
+      "description": "What the supervisor ran as: the limits' fixed seat, and the image it ran in.",
+      "type": "object",
+      "required": [
+        "harness",
+        "model",
+        "effort",
+        "image"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "harness": {
+          "$ref": "defs@1.json#/$defs/name"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "$ref": "limits@1.json#/$defs/effort"
+        },
+        "image": {
+          "$ref": "limits@1.json#/$defs/image"
+        }
+      }
+    },
+    "limits": {
+      "description": "The limits in force for the run, by their path in the ledger.",
+      "$ref": "defs@1.json#/$defs/path"
+    },
+    "started": {
+      "description": "When the kernel asked for the supervisor's sandbox, as a UTC instant: its wall clock counts from here, so a kernel opened again charges the time already run.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?Z$"
+    },
+    "links": {
+      "$ref": "defs@1.json#/$defs/links"
+    }
+  }
+}

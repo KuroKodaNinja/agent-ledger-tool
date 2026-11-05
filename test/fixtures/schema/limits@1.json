@@ -103,7 +103,7 @@
       }
     },
     "egress": {
-      "description": "Each role's egress policy in the sandbox runtime's own form, which its parser checks and the ledger does not interpret.",
+      "description": "Each role's egress policy in the configured sandbox provider's own form, which the provider checks and neither the ledger nor the kernel interprets.",
       "type": "object",
       "required": [
         "kernel",
@@ -124,6 +124,10 @@
         },
         "verifier": {
           "type": "object"
+        },
+        "checker": {
+          "type": "object",
+          "description": "The check sandbox's egress policy (D0020): optional here, required by the kernel to run a program."
         }
       }
     },
@@ -165,6 +169,14 @@
         },
         "idleSeconds": {
           "$ref": "#/$defs/amount"
+        },
+        "checkSeconds": {
+          "$ref": "#/$defs/amount",
+          "description": "The most a check sandbox may run (D0020): optional here, required by the kernel to run a program."
+        },
+        "supervisorSeconds": {
+          "$ref": "#/$defs/amount",
+          "description": "The most one supervisor run may take, from its recorded start (Tokimi D0025): optional here, required by the kernel to run a program."
         }
       }
     },
@@ -325,6 +337,10 @@
         },
         "effort": {
           "$ref": "#/$defs/effort"
+        },
+        "harness": {
+          "$ref": "defs@1.json#/$defs/name",
+          "description": "The harness the seat runs in, which needs a verifier image: optional here, required by the kernel to seat it (D0021, spike 5(c))."
         }
       }
     },
