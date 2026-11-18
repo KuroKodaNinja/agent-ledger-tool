@@ -1,4 +1,5 @@
-import { closeSync, constants, lstatSync, mkdirSync, openSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, constants, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { basename, dirname, join } from "node:path";
 import { LedgerError, UsageError } from "./errors.ts";
 import type { JsonObject } from "./json.ts";
@@ -64,6 +65,35 @@ export interface NewKernelRecord {
   /** The record, whose `schema` field names a kind a kernel writes. */
   readonly record: JsonObject;
 }
+
+/** A run as its Program declares it, which a kernel writes through {@link declareRun}. */
+export interface RunDeclaration {
+  /** The run's path in the ledger, `projects/<project>/runs/<name>`; its name is the program's. */
+  readonly run: string;
+  /** What it is called. */
+  readonly title: string;
+  /** The day it is declared, as YYYY-MM-DD. */
+  readonly date: string;
+  /** The goal contracts it drives, by their paths in the ledger, in order. */
+  readonly contracts: readonly string[];
+  /** The product repository its goals change. */
+  readonly repository: { readonly remote: string; readonly branch: string };
+  /** Its limits, a limits record as the operator wrote it. */
+  readonly limits: JsonObject;
+}
+
+/** What {@link declareRun} did. */
+export interface DeclaredRun {
+  /** The run's path in the ledger. */
+  readonly run: string;
+  /** Whether it made the run. */
+  readonly created: boolean;
+  /** The limits version now latest, the one just written or the one the limits equal. */
+  readonly limits: number;
+}
+
+/** The directory in a run that holds its limits, one version per file, `<n>.json` from 1. */
+export const LIMITS_DIR = "limits";
 
 /** The last number a decision's four digits can hold. */
 const MAX_DECISION = 9999;
@@ -307,4 +337,88 @@ export function writeKernelRecord(root: string, input: NewKernelRecord): string 
   if (problems.length === 0) return input.path;
   takeBack(undo, input.path);
   throw new LedgerError(`${input.path} would leave the ledger invalid: ${describe(problems)}`);
+}
+
+// A run's path, `projects/<project>/runs/<name>`, split into its project and name.
+const RUN_PATH = new RegExp(`^${OWNER_DIRS.project}/([^/]+)/${FOLDERS[RunKind.Run]}/([^/]+)$`);
+
+// The limits versions a run holds, by number, from its limits directory.
+function limitsVersions(root: string, run: string): readonly number[] {
+  const dir = join(root, run, LIMITS_DIR);
+  if (lstatSync(dir, { throwIfNoEntry: false }) === undefined) return [];
+  return readdirSync(dir).flatMap((file) => {
+    const version = /^([1-9][0-9]*)\.json$/.exec(file)?.[1];
+    return version === undefined ? [] : [Number(version)];
+  });
+}
+
+const readJson = (root: string, path: string): unknown => JSON.parse(readFileSync(join(root, path), "utf8"));
+
+// Writes each record in turn, undoing those before when one fails; returns the undo of them all.
+function commitAll(root: string, writes: readonly Write[]): () => void {
+  const undos: (() => void)[] = [];
+  const undo = (): void => {
+    for (const each of undos.reverse()) each();
+  };
+  try {
+    for (const write of writes) undos.push(commit(root, write, []));
+  } catch (error) {
+    takeBack(undo, writes[0]?.path ?? "");
+    throw error;
+  }
+  return undo;
+}
+
+/**
+ * Writes a run as its Program declares it, the one way a kernel writes an operator's record. A run that does not
+ * exist is made, open, with its `run.json` naming the declaration's contracts and repository, and its limits as
+ * `limits/1.json`. A run that exists must already declare those contracts, in that order, and that repository; its
+ * limits are written as the next version only when they differ from its latest. What is written is written together,
+ * and taken back when the ledger would not be valid with it, so a call that returns leaves a valid ledger.
+ * @throws {UsageError} when the run's name or the run record breaks the run schema.
+ * @throws {LedgerError} when the ledger is not valid, the path is not a run's in an existing project, the run declares
+ * other contracts or another repository, the limits are not a valid limits record, the ledger would not be valid with
+ * what is written, or it cannot be written.
+ */
+export function declareRun(root: string, input: RunDeclaration): DeclaredRun {
+  const schemas = ledgerSchemas(root);
+  const [, project, name] = RUN_PATH.exec(input.run) ?? [];
+  if (project === undefined || name === undefined) throw new LedgerError(`${input.run}: is not a run's path, projects/<project>/runs/<name>`);
+  checkName(schemas, RunKind.Run, name);
+  const named = parseSchemaName(input.limits.schema);
+  if (!named.ok || named.kind !== "limits") throw new LedgerError(`${input.run}/${LIMITS_DIR}: schema: must name a limits record`);
+  const inspection = validLedger(root, schemas);
+  const exists = inspection.runs.some((run) => run.id === input.run);
+  const writes: Write[] = [];
+  let version = 1;
+  if (!exists) {
+    if (!inspection.projects.has(project)) throw new LedgerError(`no project at ${OWNER_DIRS.project}/${project}`);
+    const record = newRecord(schemas, RunKind.Run, { title: input.title, date: input.date, contracts: [...input.contracts], repository: { remote: input.repository.remote, branch: input.repository.branch } });
+    writes.push({ path: `${input.run}/${RUN_FILE}`, text: asText(record) });
+  } else {
+    const held = readJson(root, `${input.run}/${RUN_FILE}`) as { contracts?: unknown; repository?: unknown };
+    if (!isDeepStrictEqual(held.contracts ?? [], [...input.contracts])) throw new LedgerError(`${input.run}: already declares the contracts ${JSON.stringify(held.contracts ?? [])}, not ${JSON.stringify(input.contracts)}`);
+    const repository = { remote: input.repository.remote, branch: input.repository.branch };
+    if (!isDeepStrictEqual(held.repository, repository)) throw new LedgerError(`${input.run}: already declares the repository ${JSON.stringify(held.repository ?? null)}, not ${JSON.stringify(repository)}`);
+    const latest = Math.max(0, ...limitsVersions(root, input.run));
+    if (latest > 0 && isDeepStrictEqual(readJson(root, `${input.run}/${LIMITS_DIR}/${latest}.json`), input.limits)) return { run: input.run, created: false, limits: latest };
+    version = latest + 1;
+  }
+  const limitsPath = `${input.run}/${LIMITS_DIR}/${version}.json`;
+  const checked = checkRunRecord(input.limits, limitsPath, schemas);
+  if (!checked.ok) throw new LedgerError(describe(checked.problems));
+  writes.push({ path: limitsPath, text: asText(input.limits) });
+  const undo = commitAll(root, writes);
+  let problems: readonly Problem[];
+  try {
+    problems = inspectLedger(root, schemas).problems;
+  } catch (error) {
+    takeBack(undo, input.run);
+    throw new LedgerError(`${input.run} was taken back: the ledger could not be inspected with it`, { cause: error });
+  }
+  if (problems.length > 0) {
+    takeBack(undo, input.run);
+    throw new LedgerError(`${input.run} would leave the ledger invalid: ${describe(problems)}`);
+  }
+  return { run: input.run, created: !exists, limits: version };
 }

@@ -1,33 +1,13 @@
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ledger, ledgerWithRun, problems, writeJson } from "./support.ts";
+import { LIMITS as limits, LIMITS_IMAGE as image, ledger, ledgerWithRun, problems, writeJson } from "./support.ts";
 
 const RUN = "projects/alpha/runs/first";
 const CONTRACT = "projects/alpha/contracts/pr1";
 const DATE = "2026-10-30";
 const SHA = "c".repeat(40);
 
-const image = { image: "registry.example/kernel:1", digest: `sha256:${"a".repeat(64)}` };
-const limits = {
-  schema: "limits@1",
-  date: DATE,
-  images: { kernel: image, supervisor: { "claude-code": image }, builder: { "claude-code": image }, verifier: { "claude-code": image, codex: image } },
-  harnesses: { "claude-code": { command: ["claude", "-p"], families: ["anthropic"] }, codex: { command: ["codex", "exec"], families: ["openai"] } },
-  ladders: { anthropic: { climb: [{ model: "claude-haiku-5-5", effort: "medium" }], top: { model: "claude-fable-5-1", effort: "xhigh" } } },
-  panelProfiles: { code: [{ role: "code-quality", model: "gpt-6-sol", effort: "high" }, { role: "architect", model: "gpt-6-astra", effort: "high" }] },
-  egress: { kernel: { allow: [{ capability: "ledger-remote" }] }, supervisor: {}, builder: {}, verifier: {} },
-  budget: { perGoal: 3600, perProgram: 36000, unit: "seconds" },
-  wallClock: { builderSeconds: 1800, verifierSeconds: 900, idleSeconds: 300 },
-  tree: { depth: 2, width: 6 },
-  parallelGoals: 1,
-  acceptsSupervisorGoals: false,
-  maxSplitGoals: 8,
-  maxSplits: 1,
-  supervisor: { harness: "claude-code", model: "claude-opus-5-5", effort: "medium" },
-  stagnationRepeats: 2,
-  kit: { commit: "0".repeat(40) },
-};
 const decision = { schema: "budget-decision@1", date: DATE, request: `${RUN}/requests/1.json`, outcome: "approved", ceiling: 7200, reason: "The goal is nearly done." };
 const vouch = {
   schema: "vouch@1",
