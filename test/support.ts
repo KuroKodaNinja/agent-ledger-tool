@@ -97,3 +97,26 @@ export function writeDocument(root: string, path: string, fields: Readonly<Recor
 export function problems(run: Run): readonly string[] {
   return run.stdout.trim().split("\n").slice(0, -1);
 }
+
+/** An image a limits record names. */
+export const LIMITS_IMAGE = { image: "registry.example/kernel:1", digest: `sha256:${"a".repeat(64)}` };
+/** A valid limits record, as an operator writes one. */
+export const LIMITS = {
+  schema: "limits@1",
+  date: "2026-10-30",
+  images: { kernel: LIMITS_IMAGE, supervisor: { "claude-code": LIMITS_IMAGE }, builder: { "claude-code": LIMITS_IMAGE }, verifier: { "claude-code": LIMITS_IMAGE, codex: LIMITS_IMAGE } },
+  harnesses: { "claude-code": { command: ["claude", "-p"], families: ["anthropic"] }, codex: { command: ["codex", "exec"], families: ["openai"] } },
+  ladders: { anthropic: { climb: [{ model: "claude-haiku-5-5", effort: "medium" }], top: { model: "claude-fable-5-1", effort: "xhigh" } } },
+  panelProfiles: { code: [{ role: "code-quality", model: "gpt-6-sol", effort: "high" }, { role: "architect", model: "gpt-6-astra", effort: "high" }] },
+  egress: { kernel: { allow: [{ capability: "ledger-remote" }] }, supervisor: {}, builder: {}, verifier: {} },
+  budget: { perGoal: 3600, perProgram: 36000, unit: "seconds" },
+  wallClock: { builderSeconds: 1800, verifierSeconds: 900, idleSeconds: 300 },
+  tree: { depth: 2, width: 6 },
+  parallelGoals: 1,
+  acceptsSupervisorGoals: false,
+  maxSplitGoals: 8,
+  maxSplits: 1,
+  supervisor: { harness: "claude-code", model: "claude-opus-5-5", effort: "medium" },
+  stagnationRepeats: 2,
+  kit: { commit: "0".repeat(40) },
+};

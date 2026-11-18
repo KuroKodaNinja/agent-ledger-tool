@@ -152,7 +152,8 @@ and the tool.
 
 The `exports` map in `package.json` names one module, `tools/src/index.ts`,
 which re-exports the surface and nothing else: the kernel's write,
-`writeKernelRecord`; the inspection, `inspectLedger`; the schema set of
+`writeKernelRecord`; its declaration of a run, `declareRun`, and the
+run's limits directory, `LIMITS_DIR`; the inspection, `inspectLedger`; the schema set of
 a ledger at a root, `ledgerSchemas`, and `loadSchemas` for a directory
 of schemas; the tables a dependant names paths and kinds with, the
 kinds the operator and the kernel write, the folders and the owner
@@ -172,6 +173,24 @@ already taken, and a record that fails the check `validate` applies, and
 it takes back a write the ledger would not be valid with, or could not
 be inspected with. So it writes nothing, or one record into a ledger that
 stays valid.
+
+One path writes the operator's records for them: `declareRun`, through
+which a kernel writes a run as the operator declared it elsewhere, such
+as in a Kubernetes resource. It takes the run's path
+(`projects/<project>/runs/<name>`), its title and date, its contracts
+and repository, and its limits record:
+
+- a run that does not exist is made, open, with its `run.json` and its
+  limits as `limits/1.json`, together;
+- a run that exists must declare the same contracts, in the same order,
+  and the same repository, or it is refused, naming what differs; its
+  limits are written as the next version only when they differ from its
+  latest, and equal limits write nothing.
+
+It answers the run, whether it made it, and the limits version now
+latest. It writes no other kind, and takes back what the ledger would
+not be valid with, as `writeKernelRecord` does; the kernel's own write
+still refuses every operator kind.
 
 ## Developing
 
