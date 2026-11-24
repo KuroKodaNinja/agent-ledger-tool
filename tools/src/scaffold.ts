@@ -4,7 +4,7 @@ import { basename, dirname, join } from "node:path";
 import { LedgerError, UsageError } from "./errors.ts";
 import type { JsonObject } from "./json.ts";
 import { CONTRACT_FILE, DECISION_FILE, DocKind, FOLDERS, manifestFile, NAME_RULE, OWNER_DIRS, OwnerKind } from "./layout.ts";
-import { KERNEL_RECORD_KINDS, parseSchemaName, PATH_RULE, RUN_FILE, RunKind } from "./layout.ts";
+import { KERNEL_RECORD_KINDS, parseSchemaName, PATH_RULE, RUN_FILE, RUN_GOALS_DIR, RunKind } from "./layout.ts";
 import { ledgerSchemas, type SchemaSet } from "./schema.ts";
 import { checkRunRecord, decisionNumber, type Inspection, inspectLedger, type Problem } from "./validate.ts";
 
@@ -64,6 +64,14 @@ export interface NewKernelRecord {
   readonly path: string;
   /** The record, whose `schema` field names a kind a kernel writes. */
   readonly record: JsonObject;
+}
+
+/** A contract a kernel writes into a run, for a goal a split made: where it goes, and its text, a Markdown document beginning with its frontmatter. */
+export interface NewKernelContract {
+  /** Where it goes: `<run>/goals/<goal>/contract.md`, inside an existing run, for a goal by a name. */
+  readonly path: string;
+  /** Its whole text. */
+  readonly text: string;
 }
 
 /** A run as its Program declares it, which a kernel writes through {@link declareRun}. */
@@ -327,6 +335,37 @@ export function writeKernelRecord(root: string, input: NewKernelRecord): string 
   if (!runs.some((run) => input.path.startsWith(`${run.id}/`))) throw new LedgerError(`${input.path} is not inside a run`);
   if (lstatSync(join(root, input.path), { throwIfNoEntry: false }) !== undefined) throw new LedgerError(`${input.path} already exists`);
   const undo = commit(root, { path: input.path, text: asText(input.record) }, []);
+  let problems: readonly Problem[];
+  try {
+    problems = inspectLedger(root, schemas).problems;
+  } catch (error) {
+    takeBack(undo, input.path);
+    throw new LedgerError(`${input.path} was taken back: the ledger could not be inspected with it`, { cause: error });
+  }
+  if (problems.length === 0) return input.path;
+  takeBack(undo, input.path);
+  throw new LedgerError(`${input.path} would leave the ledger invalid: ${describe(problems)}`);
+}
+
+/**
+ * Writes the contract a split made for a goal of a run, at `<run>/goals/<goal>/contract.md`, and returns its path in
+ * the ledger. It validates the contract with the schemas of the ledger at `root`, exactly as `validate` does, writes
+ * nothing else, and takes the write back when the ledger would not be valid with it, so a write that returns leaves a
+ * valid ledger.
+ * @throws {LedgerError} when the path is not a goal's contract inside an existing run or already holds something, the
+ * text is not a valid contract, the ledger is not valid, or the ledger would not be valid with it.
+ */
+export function writeKernelContract(root: string, input: NewKernelContract): string {
+  const schemas = ledgerSchemas(root);
+  if (schemas.check(PATH_RULE, input.path).length > 0) throw new LedgerError(`${input.path}: is not a path inside the ledger`);
+  const { runs } = validLedger(root, schemas);
+  const run = runs.find((one) => input.path.startsWith(`${one.id}/${RUN_GOALS_DIR}/`));
+  const goal = run === undefined ? undefined : input.path.slice(`${run.id}/${RUN_GOALS_DIR}/`.length).split("/");
+  if (run === undefined || goal?.length !== 2 || goal[1] !== CONTRACT_FILE || schemas.check(NAME_RULE, goal[0] ?? "").length > 0) {
+    throw new LedgerError(`${input.path}: is not a goal's contract inside a run, <run>/${RUN_GOALS_DIR}/<goal>/${CONTRACT_FILE}`);
+  }
+  if (lstatSync(join(root, input.path), { throwIfNoEntry: false }) !== undefined) throw new LedgerError(`${input.path} already exists`);
+  const undo = commit(root, { path: input.path, text: input.text }, []);
   let problems: readonly Problem[];
   try {
     problems = inspectLedger(root, schemas).problems;

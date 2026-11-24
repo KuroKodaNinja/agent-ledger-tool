@@ -11,7 +11,7 @@ const RUN = "projects/alpha/runs/first";
 const DEPENDANT_SCRIPT = join(import.meta.dir, "fixtures", "dependant", "check.ts");
 
 // Every name the library exports at run time, which is the whole surface less its types.
-const SURFACE = ["FOLDERS", "KERNEL_RECORD_KINDS", "LIMITS_DIR", "LedgerError", "OPERATOR_RECORD_KINDS", "OwnerKind", "RUN_FILE", "declareRun", "inspectLedger", "ledgerSchemas", "loadSchemas", "writeKernelRecord"];
+const SURFACE = ["FOLDERS", "KERNEL_RECORD_KINDS", "LIMITS_DIR", "LedgerError", "OPERATOR_RECORD_KINDS", "OwnerKind", "RUN_FILE", "declareRun", "inspectLedger", "ledgerSchemas", "loadSchemas", "writeKernelContract", "writeKernelRecord"];
 
 /** What the dependant's script reports, field by field. */
 interface Report {

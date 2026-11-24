@@ -68,7 +68,7 @@ test("everything in a run that is not a record of a kind a run holds is reported
   writeFileSync(join(root, "projects/alpha/runs/loose.json"), "{}");
   mkdirSync(join(root, "programs/group/runs/x"), { recursive: true });
 
-  const notInRun = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens";
+  const notInRun = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens, and a goal's contract.md in its directory under goals/";
   expect(problems(ledger(["validate"], root))).toStrictEqual([
     "programs/group/runs: does not belong in a program",
     `${RUN}/bad.json: blob: is not in the required form`,

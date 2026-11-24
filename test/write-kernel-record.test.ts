@@ -73,7 +73,7 @@ test("the kernel's write refuses the operator's kinds, an invalid record, a path
   writeKernelRecord(root, { path: `${RUN}/halt.json`, record: halt });
   const before = entriesUnder(join(root, RUN));
   const writes = "which a kernel does not write; a kernel writes attempt, round, budget-grant, budget-request, attestation, landing, goal-state, halt, supervision, supervision-end";
-  const notInRun = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens";
+  const notInRun = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens, and a goal's contract.md in its directory under goals/";
   const refusals: readonly (readonly [string, JsonObject, string])[] = [
     [`${RUN}/decisions/1.json`, decision, `${RUN}/decisions/1.json: schema: is a budget-decision record, ${writes}`],
     [`${RUN}/vouches/1.json`, vouch, `${RUN}/vouches/1.json: schema: is a vouch record, ${writes}`],

@@ -65,7 +65,9 @@ lives:
 - **A run is a directory record**: `run.json` is its own record, and
   every other file in it, directly or in directories named by the same
   rule as records, is a JSON record whose `schema` names a kind a run
-  holds, at a version with a schema file. Nothing else belongs in a run,
+  holds, at a version with a schema file; and a goal's directory under
+  the run's `goals/` may hold a `contract.md`, the contract a split made
+  for that goal, checked as a contract. Nothing else belongs in a run,
   and every directory in it holds a record, directly or beneath it.
 - **A path field holds a path inside the ledger**: segments of letters,
   digits, dots, hyphens and underscores, each starting with a letter or
@@ -152,7 +154,7 @@ and the tool.
 
 The `exports` map in `package.json` names one module, `tools/src/index.ts`,
 which re-exports the surface and nothing else: the kernel's write,
-`writeKernelRecord`; its declaration of a run, `declareRun`, and the
+`writeKernelRecord`, and of a split's child's contract, `writeKernelContract`; its declaration of a run, `declareRun`, and the
 run's limits directory, `LIMITS_DIR`; the inspection, `inspectLedger`; the schema set of
 a ledger at a root, `ledgerSchemas`, and `loadSchemas` for a directory
 of schemas; the tables a dependant names paths and kinds with, the
@@ -173,6 +175,13 @@ already taken, and a record that fails the check `validate` applies, and
 it takes back a write the ledger would not be valid with, or could not
 be inspected with. So it writes nothing, or one record into a ledger that
 stays valid.
+
+A kernel writes the contract of a goal a split made through
+`writeKernelContract`, at `<run>/goals/<goal>/contract.md`, the goal's
+directory in the run, exactly as given. It refuses any other path, a
+path already taken and a ledger `validate` does not pass, and takes back
+a contract the ledger would not be valid with, so it too writes nothing
+or one contract into a ledger that stays valid.
 
 One path writes the operator's records for them: `declareRun`, through
 which a kernel writes a run as the operator declared it elsewhere, such
