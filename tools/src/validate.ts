@@ -4,7 +4,7 @@ import { LedgerError } from "./errors.ts";
 import { isObject, type JsonObject } from "./json.ts";
 import { CONTRACT_FILE, DECISION_FILE, DocKind, EVIDENCE_DIR, FOLDERS, LEDGER_MANIFEST, manifestFile } from "./layout.ts";
 import { NAME_RULE, OWNER_DIR_README, OWNER_DIRS, OwnerKind, parseSchemaName } from "./layout.ts";
-import { RUN_FILE, RUN_RECORD_FILE, RUN_RECORD_KINDS, RunKind } from "./layout.ts";
+import { RUN_FILE, RUN_GOALS_DIR, RUN_RECORD_FILE, RUN_RECORD_KINDS, RunKind } from "./layout.ts";
 import type { SchemaSet } from "./schema.ts";
 
 /** One way the ledger breaks its rules. */
@@ -222,7 +222,7 @@ export interface RunRecord {
   readonly record: JsonObject;
 }
 
-const NOT_IN_RUN = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens";
+const NOT_IN_RUN = "does not belong in a run: a run holds <name>.json records, in directories named in lowercase letters, digits, and hyphens, and a goal's contract.md in its directory under goals/";
 
 // The kind a record's `schema` field names, when it is one a run holds.
 function heldKind(record: JsonObject): string | undefined {
@@ -246,17 +246,33 @@ export function checkRunRecord(value: unknown, path: string, schemas: SchemaSet)
 }
 
 // Every entry of a run's directory: records as `<name>.json`, each of a kind a run holds, in
-// directories named by the name rule, each holding a record directly or beneath it. At the run's
-// own directory its own record, run.json, is the caller's to read. Returns whether the directory
-// holds a record of a kind a run holds, directly or beneath it.
-function checkRunDirectory(root: string, dir: string, schemas: SchemaSet, problems: Problem[], records: RunRecord[], own: boolean): boolean {
+// directories named by the name rule, each holding a record directly or beneath it, and in a
+// goal's directory under goals/, the contract a split made for it. At the run's own directory its
+// own record, run.json, is the caller's to read. Returns whether the directory holds a record of a
+// kind a run holds, or a contract, directly or beneath it.
+function checkRunDirectory(root: string, run: string, dir: string, schemas: SchemaSet, problems: Problem[], records: RunRecord[]): boolean {
   let holdsRecord = false;
+  const own = dir === run;
+  const goalDirectory = dir.startsWith(`${run}/${RUN_GOALS_DIR}/`) && !dir.slice(`${run}/${RUN_GOALS_DIR}/`.length).includes("/");
   for (const entry of list(root, dir)) {
     const path = `${dir}/${entry}`;
     if (own && entry === RUN_FILE) continue;
     if (entryAt(root, path)?.isDirectory() === true) {
       if (schemas.check(NAME_RULE, entry).length > 0) problems.push({ path, message: NOT_IN_RUN });
-      else if (checkRunDirectory(root, path, schemas, problems, records, false)) holdsRecord = true;
+      else if (checkRunDirectory(root, run, path, schemas, problems, records)) holdsRecord = true;
+      continue;
+    }
+    if (goalDirectory && entry === CONTRACT_FILE) {
+      // A contract here counts as one, readable or not, so its directory is not also reported empty.
+      holdsRecord = true;
+      const contract = readRecordFile(root, path, Format.Frontmatter);
+      if (!contract.ok) {
+        problems.push({ path, message: contract.reason });
+        continue;
+      }
+      const checked = checkRecord(contract.value, DocKind.Contract, path, schemas);
+      if (!checked.ok) problems.push(...checked.problems);
+      if (isObject(contract.value)) records.push({ path, record: contract.value });
       continue;
     }
     const name = RUN_RECORD_FILE.exec(entry)?.[1];
@@ -294,7 +310,7 @@ function checkRuns(root: string, owner: string, schemas: SchemaSet, problems: Pr
       continue;
     }
     const records: RunRecord[] = [];
-    checkRunDirectory(root, path, schemas, problems, records, true);
+    checkRunDirectory(root, path, path, schemas, problems, records);
     runRecords.push(...records);
     const file = `${path}/${RUN_FILE}`;
     const read = readRecordFile(root, file, Format.Json);

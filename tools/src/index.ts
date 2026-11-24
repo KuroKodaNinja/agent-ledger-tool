@@ -8,6 +8,6 @@
 export { LedgerError } from "./errors.ts";
 export type { JsonObject } from "./json.ts";
 export { FOLDERS, KERNEL_RECORD_KINDS, OPERATOR_RECORD_KINDS, OwnerKind, RUN_FILE } from "./layout.ts";
-export { declareRun, type DeclaredRun, LIMITS_DIR, type NewKernelRecord, type RunDeclaration, writeKernelRecord } from "./scaffold.ts";
+export { declareRun, type DeclaredRun, LIMITS_DIR, type NewKernelContract, type NewKernelRecord, type RunDeclaration, writeKernelContract, writeKernelRecord } from "./scaffold.ts";
 export { ledgerSchemas, loadSchemas, type SchemaSet } from "./schema.ts";
 export { type Inspection, inspectLedger, type Problem, type Run, type RunRecord } from "./validate.ts";

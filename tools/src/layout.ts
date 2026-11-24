@@ -79,6 +79,14 @@ export const DECISION_FILE = /^(D[0-9]{4})-(.*)\.md$/;
 /** The file a run's own record is in, inside its directory. */
 export const RUN_FILE = "run.json";
 
+/** The directory of a run that holds its goals' records, each goal's in a directory named for it. */
+export const RUN_GOALS_DIR = "goals";
+
+/** The path of the contract a run holds for its goal `goal`, one a split made: the goal's directory in the run, holding {@link CONTRACT_FILE}. */
+export function runContractFile(run: string, goal: string): string {
+  return `${run}/${RUN_GOALS_DIR}/${goal}/${CONTRACT_FILE}`;
+}
+
 // The tables below decide what the tool accepts and what a kernel may write, and the library hands them to
 // dependants, so each is frozen where it is defined: no caller can widen one at run time.
 
